@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="card">
+  <h2>Login</h2>
+  <div id="msg"></div>
+
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+
+  <button onclick="login()">Login</button>
+
+  <p>No account?
+    <a href="register.html">Register</a>
+  </p>
+</div>
+
+<script>
+async function login() {
+  msg.innerHTML = "";
+
+  if (!email.value || !password.value) {
+    msg.innerHTML = "<div class='error'>All fields required</div>";
+    return;
+  }
+
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({
+      email: email.value,
+      password: password.value
+    })
+  });
+
+  const data = await res.json();
+  msg.innerHTML = `<div class="${res.ok ? "success" : "error"}">${data.message}</div>`;
+
+  if (res.ok) setTimeout(() => location.href = "dashboard.html", 800);
+}
+</script>
+
+</body>
+</html>

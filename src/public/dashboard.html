@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard</title>
+
+  <style>
+    /* ===== RESET ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #6a7cf7, #8e54e9);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== TOP BAR ===== */
+    .topbar {
+      height: 60px;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .brand {
+      font-size: 22px;
+      font-weight: 700;
+      color: #6a7cf7;
+    }
+
+    .logout-btn {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .logout-btn:hover {
+      background: #dc2626;
+    }
+
+    /* ===== CENTER ===== */
+    .dashboard-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    /* ===== CARD ===== */
+    .user-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 380px;
+      padding: 35px 30px;
+      border-radius: 18px;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+    }
+
+    /* ===== PROFILE IMAGE ===== */
+    .profile-box {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      margin: 0 auto 15px;
+      background: #6a7cf7;
+      color: #fff;
+      font-size: 42px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .profile-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* ===== TEXT ===== */
+    .user-card h2 {
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+
+    .user-card p {
+      font-size: 15px;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    /* ===== INPUT ===== */
+    input[type="file"] {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    /* ===== BUTTONS ===== */
+    .upload-btn {
+      background: #6a7cf7;
+      color: #fff;
+      border: none;
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    .upload-btn:hover {
+      background: #5a6bf0;
+    }
+
+    .remove-btn {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .remove-btn:hover {
+      background: #dc2626;
+    }
+
+    /* ===== ERROR ===== */
+    .error {
+      color: #ef4444;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 🔝 TOP BAR -->
+  <div class="topbar">
+    <div class="brand">My App</div>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+
+  <!-- 👤 DASHBOARD -->
+  <div class="dashboard-container">
+    <div class="user-card">
+      <div id="profileBox" class="profile-box"></div>
+
+      <h2 id="username">Loading...</h2>
+      <p>Welcome back 👋</p>
+
+      <input type="file" id="file" accept="image/*">
+
+      <div id="error" class="error"></div>
+
+      <button class="upload-btn" onclick="uploadImage()">Upload / Change Image</button>
+      <button class="remove-btn" onclick="removeImage()">Remove Image</button>
+    </div>
+  </div>
+
+  <script>
+    const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+
+    /* 🔐 Load User */
+    fetch("/api/auth/me", { credentials: "same-origin" })
+      .then(res => {
+        if (res.status === 401) {
+          alert("Session expired. Please login again.");
+          window.location.href = "login.html";
+        }
+        return res.json();
+      })
+      .then(user => {
+        username.innerText = user.username;
+        if (user.profileImage) {
+          profileBox.innerHTML = `<img src="${user.profileImage}">`;
+        } else {
+          profileBox.innerText = user.username[0].toUpperCase();
+        }
+      });
+
+    /* ⬆ Upload / Change Image */
+    async function uploadImage() {
+      error.innerText = "";
+      const img = file.files[0];
+
+      if (!img) {
+        error.innerText = "Please select an image";
+        return;
+      }
+
+      if (img.size > MAX_SIZE) {
+        error.innerText = "Image size must be less than 2MB";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("profile", img);
+
+      const res = await fetch("/api/user/upload-profile", {
+        method: "POST",
+        credentials: "same-origin",
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        error.innerText = data.message;
+        return;
+      }
+
+      profileBox.innerHTML = `<img src="${data.user.profileImage}">`;
+      file.value = "";
+    }
+
+    /* ❌ Remove Image */
+    async function removeImage() {
+  const res = await fetch("/api/user/remove-profile", {
+    method: "DELETE",
+    credentials: "same-origin"
+  });
+
+  const data = await res.json();
+
+  // clear old image completely
+  profileBox.innerHTML = "";
+  profileBox.textContent = data.user.username[0].toUpperCase();
+
+  file.value = "";
+}
+
+
+    /* 🚪 Logout */
+    async function logout() {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin"
+      });
+      window.location.href = "login.html";
+    }
+  </script>
+
+</body>
+</html>

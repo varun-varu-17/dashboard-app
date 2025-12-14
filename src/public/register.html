@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="card">
+  <h2>Create Account</h2>
+  <div id="msg"></div>
+
+  <input id="username" placeholder="Username">
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+
+  <button onclick="register()">Register</button>
+
+  <p>Already have an account?
+    <a href="login.html">Login</a>
+  </p>
+</div>
+
+<script>
+const usernameRegex = /^[a-zA-Z0-9]{3,15}$/;
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+async function register() {
+  msg.innerHTML = "";
+
+  if (!usernameRegex.test(username.value)) {
+    msg.innerHTML = "<div class='error'>Username must be 3–15 letters or numbers</div>";
+    return;
+  }
+
+  if (!emailRegex.test(email.value)) {
+    msg.innerHTML = "<div class='error'>Invalid email format</div>";
+    return;
+  }
+
+  if (!passwordRegex.test(password.value)) {
+    msg.innerHTML = "<div class='error'>Password must contain uppercase, lowercase & number (min 8 chars)</div>";
+    return;
+  }
+
+  const res = await fetch("/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: username.value,
+      email: email.value,
+      password: password.value
+    })
+  });
+
+  const data = await res.json();
+  msg.innerHTML = `<div class="${res.ok ? "success" : "error"}">${data.message}</div>`;
+
+  if (res.ok) setTimeout(() => location.href = "login.html", 1000);
+}
+</script>
+
+</body>
+</html>
